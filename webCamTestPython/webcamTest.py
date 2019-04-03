@@ -25,10 +25,16 @@ if __name__ == '__main__':
         while frame_captured:
             time.sleep(0.3) #Delay for easier console reading
             markers = detect_markers(frame)
+            marker_coords = [];
             for marker in markers:
                     marker.highlite_marker(frame)
+                    marker_coords.append(marker.center)
                     print("value: " + str(marker.id), "coordinate: " + str(marker.center))
             print("--------------------")
+            #frame = cv2.resize(frame, (1210,720))
+            if(len(marker_coords)==4):
+                #print("yo")
+                cv2.line(frame,marker_coords[0],marker_coords[3],(255,0,0),5)
             frame = cv2.resize(frame, (1210,720))
             cv2.imshow('Detection Frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
