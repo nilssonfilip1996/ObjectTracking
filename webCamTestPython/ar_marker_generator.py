@@ -12,10 +12,10 @@ from numpy.random import randint
 
 if __name__ == '__main__':
 
-        for x in range(5):          #Creating x amount of markers.
-            markerId = randint(100)     #Marker value is randomized
-            marker = HammingMarker(markerId)    #created marker pattern
+        for x in range(1, 5):          #Creating x amount of markers.
+            #markerId = randint(100)     #Marker value is randomized
+            marker = HammingMarker(x)    #created marker pattern
             img = Image.fromarray(marker.generate_image())  #npArray->img
             img = img.convert("L")                          #Dunno what this is, had to do it
-            img.save(str(markerId) + '.png')                #Save file. Same path as this file.
+            img.save(str(x) + '.png')                #Save file. Same path as this file.
             #img.show()         #Alternative. Used to display the image
