@@ -13,15 +13,24 @@ from ar_markers.marker import HammingMarker
 import time
 import numpy as np
 
+def draw_quadrant(ox,oy,frame):
+    height, width, bla = frame.shape
+    start_row, start_col = int(0), int(0)
+    end_row, end_col = int(height), int(width)
+    # vertical line
+    cv2.line(frame, (ox,start_row), (ox,end_row), (255,0,0),10)
+    # horizontal line
+    cv2.line(frame, (start_col, oy), (end_col, oy), (255,0,0),10)
+
 if __name__ == '__main__':
         print('Press "q" to quit')
         
-        #url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
-        url='http://10.2.2.118:8080/shot.jpg' #Arons telefon
+        url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
+        #url='http://10.2.2.118:8080/shot.jpg' #Arons telefon
         
 
         while True:
-            time.sleep(0.1) #Delay for easier console reading
+            #time.sleep(0.1) #Delay for easier console reading
             # Use urllib to get the image from the IP camera
             imgResp = urllib.request.urlopen(url)
     
@@ -39,8 +48,8 @@ if __name__ == '__main__':
                     unique_markers.append(marker)
                     marker_ids.append(marker.id)
                     marker.highlite_marker(frame)
-                    print("value: " + str(marker.id), "coordinate: " + str(marker.center))
-            print("--------------------")
+                    #print("value: " + str(marker.id), "coordinate: " + str(marker.center))
+            #print("--------------------")
             if(len(unique_markers)==4):
                 unique_markers.sort(key=lambda x: x.id) #Sort the quadrants
                 x_tot = 0
@@ -52,10 +61,13 @@ if __name__ == '__main__':
                         cv2.line(frame,unique_markers[i].center,unique_markers[i+1].center,(255,0,0),10)
                     else:
                         cv2.line(frame,unique_markers[i].center,unique_markers[0].center,(255,0,0),10)
-                x = int(x_tot/4)
-                y = int(y_tot/4)
-                cv2.line(frame,(x-10,y-10,),(x+10,y+10,),(255,0,0),10)  #Mark origo
-                cv2.line(frame,(x-10,y+10,),(x+10,y-10,),(255,0,0),10)
+                xOrigo = int(x_tot/4)
+                yOrigo = int(y_tot/4)
+                cv2.line(frame,(xOrigo-10,yOrigo-10,),(xOrigo+10,yOrigo+10,),(0,0,255),10)  #Mark origo
+                cv2.line(frame,(xOrigo-10,yOrigo+10,),(xOrigo+10,yOrigo-10,),(0,0,255),10)
+                
+                #Skicka till Aron här
+                draw_quadrant(xOrigo, yOrigo, frame)
             frame = cv2.resize(frame, (1210,720))
             cv2.imshow('Detection Frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -63,3 +75,4 @@ if __name__ == '__main__':
                 
 
         cv2.destroyAllWindows()
+        
