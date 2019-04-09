@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
         while frame_captured:
             time.sleep(0.1) #Delay for easier console reading
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             markers = detect_markers(frame)
             marker_coords = [];
             for marker in markers:
