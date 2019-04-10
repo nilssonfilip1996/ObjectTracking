@@ -28,6 +28,7 @@ class imageFeed(threading.Thread):
       print ("Exiting " + self.name)
         
     def stream(self):
+        print('Press "q" to quit')
         while True:
             #time.sleep(0.1) #Delay for easier console reading
             frame = self.getMobileFrame(self.url)
@@ -52,14 +53,13 @@ class imageFeed(threading.Thread):
     
     
 
-exitFlag = 0
-
 class myThread (threading.Thread):
    def __init__(self, threadID, name, counter):
       threading.Thread.__init__(self)
       self.threadID = threadID
       self.name = name
       self.counter = counter
+      
    def run(self):
       print ("Starting " + self.name)
       print_time(self.name, self.counter, 10)
@@ -67,14 +67,11 @@ class myThread (threading.Thread):
 
 def print_time(threadName, delay, counter):
    while counter:
-      if exitFlag:
-         threadName.exit()
       time.sleep(delay)
       print ("%s: %s" % (threadName, time.ctime(time.time())))
       counter -= 1
       
 if __name__ == '__main__':
-    print('Press "q" to quit')
     
     url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
     #url='http://10.2.2.118:8080/shot.jpg' #Arons telefon
