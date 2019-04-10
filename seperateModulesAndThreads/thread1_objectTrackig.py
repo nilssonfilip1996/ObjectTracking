@@ -3,83 +3,89 @@
 """
 Created on Tue Apr  9 13:37:35 2019
 
-@author: orgel
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Apr  4 12:12:48 2019
-
-@author: nilss
+@author: orgel & Filip
 """
 
 #from __future__ import print_function
 import urllib
 import cv2
 from ar_markers import detect_markers
-from ar_markers.marker import HammingMarker
+import threading
 import numpy as np
-import math
+import time
 
-def draw_quadrant(ox,oy,frame):
-    height, width, bla = frame.shape
-    start_row, start_col = int(0), int(0)
-    end_row, end_col = int(height), int(width)
-    # vertical line
-    cv2.line(frame, (ox,start_row), (ox,end_row), (255,0,0),10)
-    # horizontal line
-    cv2.line(frame, (start_col, oy), (end_col, oy), (255,0,0),10)
+
+class imageFeed(threading.Thread):
+    def __init__(self, url, name):
+        threading.Thread.__init__(self)
+        self.url = url
+        self.name = name
+        #self.start()
+        
+    def run(self):
+      print ("Starting " + self.name)
+      self.stream()
+      print ("Exiting " + self.name)
+        
+    def stream(self):
+        while True:
+            #time.sleep(0.1) #Delay for easier console reading
+            frame = self.getMobileFrame(self.url)
+            markers = detect_markers(frame)
+            print(markers)
+            frame = cv2.resize(frame, (1210,720))
+            cv2.imshow('Detection Frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            
+        cv2.destroyAllWindows()
+        
     
-def getMobileFrame(url):
-    # Use urllib to get the image from the IP camera
-    imgResp = urllib.request.urlopen(url)
-
-    # Numpy to convert into a array
-    imgNp = np.array(bytearray(imgResp.read()),dtype=np.uint8)
     
-    # Finally decode the array to OpenCV usable format
-    return cv2.imdecode(imgNp,-1)
+    def getMobileFrame(self, url):
+        # Use urllib to get the image from the IP camera
+        imgResp = urllib.request.urlopen(url)
+        # Numpy to convert into a array
+        imgNp = np.array(bytearray(imgResp.read()),dtype=np.uint8)
+        # Finally decode the array to OpenCV usable format
+        return cv2.imdecode(imgNp,-1)
+    
+    
 
-def evaluateFP_marker(prevCoord, currentCoord, currentQ, origo):
-    if(currentCoord[0]>origo[0] and currentCoord[1]<origo[1]):
-        return 1
-    if(currentCoord[0]>origo[0] and currentCoord[1]>origo[1]):
-        return 2
-    if(currentCoord[0]<origo[0] and currentCoord[1]>origo[1]):
-        return 3
-    if(currentCoord[0]<origo[0] and currentCoord[1]<origo[1]):
-        return 4
-    return currentQ
+exitFlag = 0
 
-def isInBoundary(coord1, coord2, r): 
+class myThread (threading.Thread):
+   def __init__(self, threadID, name, counter):
+      threading.Thread.__init__(self)
+      self.threadID = threadID
+      self.name = name
+      self.counter = counter
+   def run(self):
+      print ("Starting " + self.name)
+      print_time(self.name, self.counter, 10)
+      print ("Exiting " + self.name)
+
+def print_time(threadName, delay, counter):
+   while counter:
+      if exitFlag:
+         threadName.exit()
+      time.sleep(delay)
+      print ("%s: %s" % (threadName, time.ctime(time.time())))
+      counter -= 1
       
-    x1 = math.pow((coord2[0]-coord1[0]), 2) 
-    y1 = math.pow((coord2[1]-coord1[1]), 2) 
-    hyp = math.sqrt(x1 + y1) # distance between the centre and given point 
-    #print(hyp)
-    return (hyp<r)
-    
-    
-
-
 if __name__ == '__main__':
     print('Press "q" to quit')
     
     url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
     #url='http://10.2.2.118:8080/shot.jpg' #Arons telefon
-    fp_location = (0,0)
-    fp_quadrant = 1
+    
+    t1 = imageFeed(url, "Thread-1")
+    t2 = myThread(2, "Thread-2", 1)
+    
+    t1.start()
+    t2.start()
+    t1.join()   #Väntar på att tråden ska bli klar!
+    t2.join()   #Väntar på att tråden ska bli klar!
+    print("Threads done")
 
-    while True:
-        #time.sleep(0.1) #Delay for easier console reading
-        frame = getMobileFrame(url)
-        markers = detect_markers(frame)
-
-        frame = cv2.resize(frame, (1210,720))
-        cv2.imshow('Detection Frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-            
-
-    cv2.destroyAllWindows()
         
