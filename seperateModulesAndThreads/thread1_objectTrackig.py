@@ -14,6 +14,8 @@ import threading
 import numpy as np
 import time
 import math
+from collections import Counter
+import dictdiffer
 
 
 class imageFeed(threading.Thread):
@@ -31,14 +33,45 @@ class imageFeed(threading.Thread):
         
     def stream(self):
         print('Press "q" to quit')
-        prev_unique_markers = {}
+        counter=0
+        d_list = []
+        prev_reading = {}
+        current_reading = {}
         while True:
             #unique_markers = []
             unique_markers = {}
             marker_ids = []
                 
             frame = self.getMobileFrame(self.url)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            if(counter==5):
+                full_d = {}
+                for d in d_list: #d_list is a list of the 5 most recent readings
+                    for d_key in d: 
+                        if(not  d_key in full_d):
+                            full_d[d_key] = []          #full_d is a single dict holding all info from the 5 most recent readings.
+                        full_d[d_key].append(d[d_key])
+                for d_key in full_d:
+                    c = Counter(full_d[d_key])          
+                    value = c.most_common()[0][0]       #Get the most frequent value from the 5 most recent readings
+                    current_reading[d_key] = value      #current_reading holds the most frequent values from the 5 most recent readings.
+                diff_list = []
+                major_diff_detected = False
+                for diff in list(dictdiffer.diff(prev_reading, current_reading)):
+                    if(diff[0]=='change'):
+                        if(not isInBoundary(diff[2][0], diff[2][1], 4)): #diff in 4 pixels mean actual movement
+                            diff_list.append((diff[1], diff[2]))
+                            major_diff_detected = True
+                    if(diff[0]=='add'):
+                        print("Added " + str(diff[2]))
+                    if(diff[0]=='remove'):
+                        print("Removed " + str(diff[2]))
+                if(major_diff_detected):
+                    print("Change detected on: " + str(diff_list))
+                prev_reading = current_reading
+                current_reading = {}
+                counter=0
+                d_list = []
             markers = detect_markers(frame)
             for marker in markers:
                 if(marker.id not in marker_ids):    #This removes duplicate markers. Dunno why every marker is registered twice
@@ -47,23 +80,10 @@ class imageFeed(threading.Thread):
                     marker_ids.append(marker.id)
                     marker.highlite_marker(frame)
             print()
-            #if(prev_unique_markers==unique_markers):
-            if(checkDictEquality(prev_unique_markers, unique_markers)):
-                print("Scene same!") 
-#                print("prev:")
-#                for m in prev_unique_markers.values():
-#                   print(m)
-#                print("Current:")
-#                for m in unique_markers.values():
-#                   print(m)
-            else:
-                print("Scene not the same!")
-            prev_unique_markers = unique_markers
-#            print("detected coordinates:")
-#            for m in unique_markers:
-#                print(m.center)
+            d_list.append(unique_markers)
             frame = cv2.resize(frame, (1210,720))
             cv2.imshow('Detection Frame', frame)
+            counter+=1
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             
