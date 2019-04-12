@@ -12,9 +12,10 @@ import cv2
 from ar_markers import detect_markers
 import threading
 import numpy as np
-import math
 from collections import Counter
 import dictdiffer
+
+from helper_module import isInBoundary
 
 
 class imageFeed(threading.Thread):
@@ -98,12 +99,6 @@ class imageFeed(threading.Thread):
         return cv2.imdecode(imgNp,-1)
         
                 
-def isInBoundary(coord1, coord2, r): 
-  
-    x1 = math.pow((coord2[0]-coord1[0]), 2) 
-    y1 = math.pow((coord2[1]-coord1[1]), 2) 
-    hyp = math.sqrt(x1 + y1) # distance between the centre and given point 
-    return (hyp<r)
       
 if __name__ == '__main__':
     url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
