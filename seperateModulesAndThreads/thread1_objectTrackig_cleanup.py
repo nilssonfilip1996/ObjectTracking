@@ -16,15 +16,20 @@ from collections import Counter
 import dictdiffer
 
 from helper_module import isInBoundary
+from thread2_EventHandling import eventHandler
 
 
 class imageFeed(threading.Thread):
-    def __init__(self, url, name):
+    def __init__(self, url, name, eventHandler):
         threading.Thread.__init__(self)
         self.url = url                      #Url for camera feed
         self.name = name                    #Thread name
         self.d_list = []                    #Collection of x recent readings
         self.prev_reading = {}              #To keep track of the last succesful reading
+        
+        self.eventHandler = eventHandler
+        eventHandler.start()
+        eventHandler.join()
         
     def run(self):
       print ("Starting " + self.name)
@@ -74,14 +79,17 @@ class imageFeed(threading.Thread):
             current_reading[d_key] = value      #current_reading holds the most frequent values from the 5 most recent readings.
         major_diff_detected = False
         for diff in list(dictdiffer.diff(self.prev_reading, current_reading)):
-            if(major_diff_detected):
-                break
             if(diff[0]=='change'):
                 m1 = diff[2][0]         #Old reading
                 m2 = diff[2][1]         #New reading
                 if(not isInBoundary(m1, m2, 4)): #diff in 4 pixels mean actual movement.
                     major_diff_detected = True
+                    self.eventHandler.enQueue(diff)
             else:
+                if(diff[0]=='add'):
+                    self.eventHandler.enQueue(diff)
+                if(diff[0]=='remove'):
+                    self.eventHandler.enQueue(diff)
                 major_diff_detected = True
         self.prev_reading = current_reading
         self.d_list = []
@@ -101,9 +109,12 @@ class imageFeed(threading.Thread):
                 
       
 if __name__ == '__main__':
-    url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
-    t1 = imageFeed(url, "Thread-1")
+    #url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
+    url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
+    t2 = eventHandler("Thread-1")
+    t1 = imageFeed(url, "Thread-1", t2)
     t1.start()
+
     t1.join()   #Väntar på att tråden ska bli klar!
     print("Threads done")
 

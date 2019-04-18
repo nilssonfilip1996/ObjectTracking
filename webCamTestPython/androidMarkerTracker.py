@@ -57,7 +57,7 @@ def isInBoundary(coord1, coord2, r):
 if __name__ == '__main__':
     print('Press "q" to quit')
     
-    url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
+    url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
     #url='http://10.2.2.118:8080/shot.jpg' #Arons telefon
     fp_location = (0,0)
     fp_quadrant = 1

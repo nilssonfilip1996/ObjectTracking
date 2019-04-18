@@ -141,8 +141,8 @@ def isInBoundary(coord1, coord2, r):
       
 if __name__ == '__main__':
     
-    url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
-    #url='http://10.2.2.118:8080/shot.jpg' #Arons telefon
+    #url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
+    url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
     
     t1 = imageFeed(url, "Thread-1")
     #t2 = myThread(2, "Thread-2", 1)

@@ -12,7 +12,7 @@ from numpy.random import randint
 
 if __name__ == '__main__':
 
-        for x in range(6, 12):          #Creating x amount of markers.
+        for x in range(1, 1):          #Creating x amount of markers.
             #markerId = randint(100)     #Marker value is randomized
             marker = HammingMarker(x)    #created marker pattern
             img = Image.fromarray(marker.generate_image())  #npArray->img
