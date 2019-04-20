@@ -16,20 +16,21 @@ from collections import Counter
 import dictdiffer
 
 from helper_module import isInBoundary
-from thread2_EventHandling import eventHandler
+from thread2_EventHandling import worker
 
 
 class imageFeed(threading.Thread):
-    def __init__(self, url, name, eventHandler):
+    def __init__(self, url, name, worker, stopper):
         threading.Thread.__init__(self)
         self.url = url                      #Url for camera feed
         self.name = name                    #Thread name
         self.d_list = []                    #Collection of x recent readings
         self.prev_reading = {}              #To keep track of the last succesful reading
         
-        self.eventHandler = eventHandler
-        eventHandler.start()
-        eventHandler.join()
+        self.worker = worker
+        self.stopper = stopper
+        #eventHandler.start()
+        #eventHandler.join()
         
     def run(self):
       print ("Starting " + self.name)
@@ -61,6 +62,7 @@ class imageFeed(threading.Thread):
             cv2.imshow('Detection Frame', frame)
             counter+=1
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                self.stopper.set()
                 break
             
         cv2.destroyAllWindows()
@@ -84,12 +86,9 @@ class imageFeed(threading.Thread):
                 m2 = diff[2][1]         #New reading
                 if(not isInBoundary(m1, m2, 4)): #diff in 4 pixels mean actual movement.
                     major_diff_detected = True
-                    self.eventHandler.enQueue(diff)
-            else:
-                if(diff[0]=='add'):
-                    self.eventHandler.enQueue(diff)
-                if(diff[0]=='remove'):
-                    self.eventHandler.enQueue(diff)
+                    self.worker.enQueue(diff)
+            else:   
+                self.worker.enQueue(diff)
                 major_diff_detected = True
         self.prev_reading = current_reading
         self.d_list = []
@@ -111,11 +110,15 @@ class imageFeed(threading.Thread):
 if __name__ == '__main__':
     #url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
     url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
-    t2 = eventHandler("Thread-1")
-    t1 = imageFeed(url, "Thread-1", t2)
+    stopper = threading.Event()
+    t2 = worker("worker",stopper)
+    t2.daemon = True
+    t2.start()
+    t1 = imageFeed(url, "Thread-1", t2, stopper)
     t1.start()
 
     t1.join()   #Väntar på att tråden ska bli klar!
+    t2.join()
     print("Threads done")
 
         
