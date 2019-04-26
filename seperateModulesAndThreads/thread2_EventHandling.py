@@ -8,6 +8,8 @@ Created on Tue Apr  9 13:30:51 2019
 import threading
 import queue
 import time
+from pymongo import MongoClient
+import json
              
 class worker(threading.Thread):
     def __init__(self, name, stopper):
@@ -20,23 +22,17 @@ class worker(threading.Thread):
     def run(self):
         print ("Starting " + self.name)
         while not self.stopper.is_set():
-        #while True:
             time.sleep(1)
-            #print("hej")
             res = self.deQueue()
             if(res!=None):
                 print("Work found!")
-                print(res)
                 self.processContent(res)
         print ("Exiting " + self.name)
         
     def enQueue(self, li):
         self._queue.put(li)
-        #self._queue.task_done()
-        #print(self._queue.qsize())
     
     def deQueue(self):
-        #print("hey")
         if(not self._queue.empty()):
             val = self._queue.get()
             self._queue.task_done()
@@ -45,19 +41,52 @@ class worker(threading.Thread):
             return None
         
     def processContent(self, contenttuple):
+        print(contenttuple)
         eventType = contenttuple[0]
-        eventList = contenttuple[2]
         if(eventType=='change'):
-            markerId = contenttuple[1][0] #Only used for change event
-            eStr = eventType + " " + str(markerId) + " " + str(eventList) + "\n"
+            aDict = createChangeDict(contenttuple)
+            logToDB(aDict)
         else:
-            eStr = ""
+            eventList = contenttuple[2]
             for e in eventList:
-                eStr += eventType + " " + str(e[0]) + " " + str(e[1]) + "\n"
-        writeToFile("testFile.txt", eStr)
+                aDict = createAddOrRemoveDict(eventType,e)
+                logToDB(aDict)
     
 def writeToFile(fileName, content):
     f = open(fileName, "a")
     f.write(content)
     f.close()
+    
+    
+def createChangeDict(contenttuple):
+    eventList = contenttuple[2]
+    markerId = contenttuple[1][0] #Only used for change event
+    prevCoord = eventList[0]
+    currCoord = eventList[1]
+    aDict = {'event':'change', 
+             'id' : markerId,
+             'previousLocation': {'x':prevCoord[0],'y':prevCoord[1]},
+             'currentLocation': {'x':currCoord[0],'y':currCoord[1]}}
+    return aDict
+
+def createAddOrRemoveDict(eventType, event):
+    markerId = event[0]
+    coord = event[1]
+    aDict = {'event': eventType,
+             'id':markerId,
+             'currentLocation': {'x':coord[0],'y':coord[1]}}
+    return aDict
+        
+
+"""
+Connect to mongoDB server.
+Cluster name: testcluster
+Database name: test
+Collection name: markerdata
+"""
+def logToDB(dictContent):
+    client = MongoClient("mongodb+srv://nilssonfilip:ekh9lMng@testcluster-m1vgd.gcp.mongodb.net/test?retryWrites=true")
+    db = client.get_database('test')
+    collection = db.get_collection('markerdata')
+    collection.insert_one(dictContent)
 

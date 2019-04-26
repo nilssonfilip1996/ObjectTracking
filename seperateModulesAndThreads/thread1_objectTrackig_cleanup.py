@@ -18,6 +18,11 @@ import dictdiffer
 from helper_module import isInBoundary
 from thread2_EventHandling import worker
 
+width = 95.5
+height = 51
+cm_to_pixelsX = width/1920
+cm_to_pixelsY = height/1080
+
 
 class imageFeed(threading.Thread):
     def __init__(self, url, name, worker, stopper):
@@ -29,8 +34,6 @@ class imageFeed(threading.Thread):
         
         self.worker = worker
         self.stopper = stopper
-        #eventHandler.start()
-        #eventHandler.join()
         
     def run(self):
       print ("Starting " + self.name)
@@ -54,7 +57,8 @@ class imageFeed(threading.Thread):
             markers = detect_markers(frame)
             for marker in markers:
                 if(marker.id not in marker_ids):    #This removes duplicate markers. Dunno why every marker is registered twice
-                    unique_markers[marker.id] = marker.center
+                    #unique_markers[marker.id] = marker.center
+                    unique_markers[marker.id] =(round(marker.center[0]*cm_to_pixelsX,1),round(marker.center[1]*cm_to_pixelsY,1))
                     marker_ids.append(marker.id)
                     marker.highlite_marker(frame)
             self.d_list.append(unique_markers)
@@ -84,7 +88,7 @@ class imageFeed(threading.Thread):
             if(diff[0]=='change'):
                 m1 = diff[2][0]         #Old reading
                 m2 = diff[2][1]         #New reading
-                if(not isInBoundary(m1, m2, 4)): #diff in 4 pixels mean actual movement.
+                if(not isInBoundary(m1, m2, 1)): #diff in 1 cm mean actual movement.
                     major_diff_detected = True
                     self.worker.enQueue(diff)
             else:   
@@ -108,8 +112,8 @@ class imageFeed(threading.Thread):
                 
       
 if __name__ == '__main__':
-    #url='http://10.2.10.123:8080/shot.jpg' #Filips telefon
-    url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
+    url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
+    #url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
     stopper = threading.Event()
     t2 = worker("worker",stopper)
     t2.daemon = True
