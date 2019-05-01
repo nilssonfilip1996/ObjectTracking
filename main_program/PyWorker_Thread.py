@@ -8,22 +8,26 @@ Created on Tue Apr  9 13:30:51 2019
 import threading
 import queue
 import time
+
+import json
+#import paho.mqtt.client as mqtt
              
 class worker(threading.Thread):
-    def __init__(self, name, stopper):
+    def __init__(self, name, stopper, client):
         threading.Thread.__init__(self)
         self._queue = queue.Queue(maxsize=0)
         self.name = name                    #Thread name
         self.stopper = stopper
+        self.mqttClient = client
         
     def run(self):
         print ("Starting " + self.name)
         while not self.stopper.is_set():
-            time.sleep(0.5)
             res = self.deQueue()
             if(res!=None):
                 print("Work found!")
                 self.processContent(res)
+            time.sleep(0.5)
         print ("Exiting " + self.name)
         
     def enQueue(self, li):
@@ -39,11 +43,7 @@ class worker(threading.Thread):
         
     def processContent(self, contentDict):
         print(contentDict)
-        """
-        Add API functionality here:
-            Step 1:
-                Broadcast the formated data to ALL connected clients.
-            Step 2:
-                Done.
-        """
+        data_out=json.dumps(contentDict) # json.loads - decodes json into a python object 
+        self.mqttClient.publish("tracking_data", data_out)
+        
 

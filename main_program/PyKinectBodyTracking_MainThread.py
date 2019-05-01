@@ -18,6 +18,7 @@ import time
 
 from PyMarkerTracking_Thread import imageFeed
 from PyWorker_Thread import worker
+import paho.mqtt.client as mqtt
 
 # colors for drawing different bodies 
 SKELETON_COLORS = [pygame.color.THECOLORS["red"], 
@@ -194,9 +195,15 @@ class BodyGameRuntime(object):
 
 
 __main__ = "Kinect v2 Body Game"
+client_id = "DummyClient"
+client = mqtt.Client(client_id)
+# set username and pw to MQTT broker and connect
+client.username_pw_set("twzdgqki", "aB6nkIbUQ7Nx")
+client.connect('m24.cloudmqtt.com', 13583, 60)
 url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
+
 stopper = threading.Event()
-wThread = worker("Worker-thread",stopper)
+wThread = worker("Worker-thread",stopper, client)
 wThread.start()
 mThread = imageFeed(url, "Marker-thread", wThread, stopper)
 mThread.start()
