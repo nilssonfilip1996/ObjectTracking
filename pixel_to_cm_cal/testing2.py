@@ -21,8 +21,8 @@ import math
 """
 Measgure width and height of camera of scene set variables width and height accordingly.
 """
-width = 93.5
-height = 52.7
+width = 95.5
+height = 51
 cm_to_pixelsX = width/1920
 cm_to_pixelsY = height/1080
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         print('Press "q" to quit')
         print(cm_to_pixelsX)
         while True:
-            frame = getMobileFrame("http://192.168.1.59:8080/shot.jpg")
+            frame = getMobileFrame("http://10.2.5.219:8080/shot.jpg")
             #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             markers = detect_markers(frame)
             for marker in markers:

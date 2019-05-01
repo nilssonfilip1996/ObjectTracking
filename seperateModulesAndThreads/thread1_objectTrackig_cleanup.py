@@ -14,14 +14,15 @@ import threading
 import numpy as np
 from collections import Counter
 import dictdiffer
+import datetime
 
 from helper_module import isInBoundary
 from thread2_EventHandling import worker
 
-width = 95.5
-height = 51
-cm_to_pixelsX = width/1920
-cm_to_pixelsY = height/1080
+#width = 95.5
+#height = 51
+#cm_to_pixelsX = width/1920
+#cm_to_pixelsY = height/1080
 
 
 class imageFeed(threading.Thread):
@@ -48,8 +49,9 @@ class imageFeed(threading.Thread):
             marker_ids = []
                 
             frame = self.getMobileFrame(self.url)
-            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             if(counter==5):
+                print(datetime.datetime.now().time())
                 if(self.evaluateMarkerSequence()):
                     print("Major diff detected!")
                     print()
@@ -57,8 +59,8 @@ class imageFeed(threading.Thread):
             markers = detect_markers(frame)
             for marker in markers:
                 if(marker.id not in marker_ids):    #This removes duplicate markers. Dunno why every marker is registered twice
-                    #unique_markers[marker.id] = marker.center
-                    unique_markers[marker.id] =(round(marker.center[0]*cm_to_pixelsX,1),round(marker.center[1]*cm_to_pixelsY,1))
+                    unique_markers[marker.id] = marker.center
+                    #unique_markers[marker.id] =(round(marker.center[0]*cm_to_pixelsX,1),round(marker.center[1]*cm_to_pixelsY,1))
                     marker_ids.append(marker.id)
                     marker.highlite_marker(frame)
             self.d_list.append(unique_markers)
@@ -90,9 +92,13 @@ class imageFeed(threading.Thread):
                 m2 = diff[2][1]         #New reading
                 if(not isInBoundary(m1, m2, 1)): #diff in 1 cm mean actual movement.
                     major_diff_detected = True
-                    self.worker.enQueue(diff)
+                    aDict = createChangeDict(diff)
+                    self.worker.enQueue(aDict)
             else:   
-                self.worker.enQueue(diff)
+                eventList = diff[2]
+                for e in eventList:
+                    aDict = createAddOrRemoveDict(diff[0],e)
+                    self.worker.enQueue(aDict)
                 major_diff_detected = True
         self.prev_reading = current_reading
         self.d_list = []
@@ -109,7 +115,26 @@ class imageFeed(threading.Thread):
         # Finally decode the array to OpenCV usable format
         return cv2.imdecode(imgNp,-1)
         
-                
+      
+
+def createChangeDict(contenttuple):
+    eventList = contenttuple[2]
+    markerId = contenttuple[1][0] #Only used for change event
+    prevCoord = eventList[0]
+    currCoord = eventList[1]
+    aDict = {'event':'change', 
+             'id' : markerId,
+             'previousLocation': {'x':prevCoord[0],'y':prevCoord[1]},
+             'currentLocation': {'x':currCoord[0],'y':currCoord[1]}}
+    return aDict
+
+def createAddOrRemoveDict(eventType, event):
+    markerId = event[0]
+    coord = event[1]
+    aDict = {'event': eventType,
+             'id':markerId,
+             'currentLocation': {'x':coord[0],'y':coord[1]}}
+    return aDict          
       
 if __name__ == '__main__':
     url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
