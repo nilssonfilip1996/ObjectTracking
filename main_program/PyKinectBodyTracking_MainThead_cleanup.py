@@ -15,6 +15,7 @@ import pygame
 import sys
 import threading
 import time
+import datetime
 
 from PyMarkerTracking_Thread import imageFeed
 from PyWorker_Thread import worker
@@ -75,6 +76,9 @@ class BodyGameRuntime(object):
         self._previous_rotation = None
         self._previous_left_hand_state = None
         self._previous_right_hand_state = None
+        
+        self.stateLeft = None
+        self.stateRight = None
     
 
     def draw_body_bone(self, joints, jointPoints, color, joint0, joint1):
@@ -148,7 +152,7 @@ class BodyGameRuntime(object):
             for event in pygame.event.get(): # User did something
                 if event.type == pygame.QUIT: # If user clicked close
                     self._done = True # Flag that we are done so we exit this loop
-
+                 
                 elif event.type == pygame.VIDEORESIZE: # window resized
                     self._screen = pygame.display.set_mode(event.dict['size'], 
                                                pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE, 32)
@@ -192,10 +196,12 @@ class BodyGameRuntime(object):
                     right_hand_y = body.joints[PyKinectV2.JointType_HandTipRight].Position.y;
                     right_hand_z = body.joints[PyKinectV2.JointType_HandTipRight].Position.z;  
                     
-                    print(type(left_hand_x))
-                    
-                    left_hand_coordinates = {"visible":"","x":"","y":"","z":""}
-                    right_hand_coordinates = {"visible":"","x":"","y":"","z":""}
+                    left_hand_coordinates = {"x":round(left_hand_x,2),
+                                             "y":round(left_hand_y,2), 
+                                             "z":round(left_hand_z,2)}
+                    right_hand_coordinates = {"x":round(right_hand_x,2),
+                                              "y":round(right_hand_y,2),
+                                              "z":round(right_hand_z,2)}
                     
                     # ROTATION
                     
@@ -213,17 +219,27 @@ class BodyGameRuntime(object):
                     
                     if (abs(diff_shoulders) < 0.15):
                         self._current_rotation = "facing table"
-                    elif(diff_shoulders < 0):
+                    elif(diff_shoulders > 0):
                         self._current_rotation = "facing left"
                     else:
                         self._current_rotation = "facing right"
                     
                     if (self._current_rotation != self._previous_rotation):
-                        print("new rotation detected")
-                        self._previous_rotation = self._current_rotation
+                        # print("new rotation detected")
+                        event_triggered = True
                         
-                        # self.worker.enQueue(data_out)
-                        # add hand coord
+                    if(event_triggered):
+                        self.worker.enQueue({"type" : "player",
+                                             "time" : str(datetime.datetime.now().time())[:-4],
+                                             "event": "rotation",
+                                             "stateLeft" : self.stateLeft,
+                                             "locationLeft" : left_hand_coordinates,
+                                             "stateRight" : self.stateRight,
+                                             "locationRight" : right_hand_coordinates,
+                                             "previousRotation" : self._previous_rotation,
+                                             "currentRotation" : self._current_rotation})
+                        self._previous_rotation = self._current_rotation
+                        event_triggered = False
                         
                     # HAND STATE
                     
@@ -246,27 +262,33 @@ class BodyGameRuntime(object):
                     if((self._right_hand_state == 2) or (self._right_hand_state == 3)):
                         if(self._right_hand_state != self._previous_right_hand_state):
                             if(self._right_hand_state == 2):
-                                # hand open
-                                print("right hand state changed")
-                                self._previous_right_hand_state = self._right_hand_state
+                                self.stateRight = "open"                                
                             else:
-                                # hand closed
-                                continue
-                            
-                            # self.worker.enQueue(data_out)
+                                self.stateRight = "closed"                               
+                            event_triggered = True    
+                            self._previous_right_hand_state = self._right_hand_state
                             
                     if(self._left_hand_state == 2 or self._left_hand_state == 3):
                         if(self._left_hand_state != self._previous_left_hand_state):
-                            if(self._left_hand_state == 2):
-                                # hand open                               
-                                print("left hand state changed")
-                                self._previous_left_hand_state = self._left_hand_state
+                            if(self._left_hand_state == 2):                               
+                                self.stateLeft = "open"                     
                             else:
-                                # hand closed
-                                continue
+                                self.stateLeft = "closed"
+                            event_triggered = True   
+                            self._previous_left_hand_state = self._left_hand_state
                             
-                            # self.worker.enQueue(data_out)
-                            # add hand coord
+                    if(event_triggered):
+                        self.worker.enQueue({"type" : "player",
+                                             "time" : str(datetime.datetime.now().time())[:-4],
+                                             "event": "hand",
+                                             "stateLeft" : self.stateLeft,
+                                             "locationLeft" : left_hand_coordinates,
+                                             "stateRight" : self.stateRight,
+                                             "locationRight" : self._previous_right_hand_state,
+                                             "locationRight" : right_hand_coordinates,
+                                             "previousRotation" : self._previous_rotation,
+                                             "currentRotation" : self._current_rotation})
+                        event_triggered = False
                     
                     
                     ''' OTHERS CODE '''
@@ -278,6 +300,8 @@ class BodyGameRuntime(object):
 
             # --- copy back buffer surface pixels to the screen, resize it if needed and keep aspect ratio
             # --- (screen size may be different from Kinect's color frame size) 
+            
+            # this can be removed - updates the frames to the thing
             h_to_w = float(self._frame_surface.get_height()) / self._frame_surface.get_width()
             target_height = int(h_to_w * self._screen.get_width())
             surface_to_draw = pygame.transform.scale(self._frame_surface, (self._screen.get_width(), target_height));

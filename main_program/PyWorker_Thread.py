@@ -27,7 +27,7 @@ class worker(threading.Thread):
             if(res!=None):
                 print("Work found!")
                 self.processContent(res)
-            time.sleep(0.5)
+            time.sleep(0.1)
         print ("Exiting " + self.name)
         
     def enQueue(self, li):
