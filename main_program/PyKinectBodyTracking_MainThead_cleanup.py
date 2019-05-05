@@ -328,7 +328,8 @@ client = mqtt.Client(client_id)
 # set username and pw to MQTT broker and connect
 client.username_pw_set("twzdgqki", "aB6nkIbUQ7Nx")
 client.connect('m24.cloudmqtt.com', 13583, 60)
-url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
+#url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
+url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
 
 stopper = threading.Event()
 wThread = worker("Worker-thread",stopper, client)
