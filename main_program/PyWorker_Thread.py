@@ -22,12 +22,14 @@ class worker(threading.Thread):
         
     def run(self):
         print ("Starting " + self.name)
-        while not self.stopper.is_set():
+        self.processContent({"start":"start"})
+        while not self.stopper.is_set() or not self._queue.empty():
             res = self.deQueue()
             if(res!=None):
                 print("Work found!")
                 self.processContent(res)
             time.sleep(0.1)
+        self.processContent({"end":"end"})
         print ("Exiting " + self.name)
         
     def enQueue(self, li):
@@ -42,7 +44,7 @@ class worker(threading.Thread):
             return None
         
     def processContent(self, contentDict):
-        print(contentDict)
+        #print(contentDict)
         data_out=json.dumps(contentDict) # json.loads - decodes json into a python object 
         self.mqttClient.publish("tracking_data", data_out)
         

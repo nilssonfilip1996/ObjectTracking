@@ -39,7 +39,8 @@ class imageFeed(threading.Thread):
             marker_ids = []
             frame = self.getMobileFrame(self.url)
             #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            if(counter==5):
+            #if(len(self.d_list)>4):
+            if(counter==5):                                 #here
                 #print(datetime.datetime.now().time())
                 if(self.evaluateMarkerSequence()):
                     print("Major diff detected!")
@@ -87,7 +88,8 @@ class imageFeed(threading.Thread):
                     self.worker.enQueue(aDict)  #Pass event to worker
                 major_diff_detected = True
         self.prev_reading = current_reading
-        self.d_list = []
+        self.d_list = []                       #here
+        #self.d_list.pop(0)
         if(major_diff_detected):
             return True
         else:

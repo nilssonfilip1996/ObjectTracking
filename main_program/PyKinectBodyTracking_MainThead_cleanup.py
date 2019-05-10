@@ -39,9 +39,9 @@ class BodyGameRuntime(object):
         self.stopper = stopper
         #-------------Use this method for publishing events!-------------
         #The format you pass as argument is the same format that is delivered to connected clients.
-        self.worker.enQueue({'work': 'sent',
-                             'from': 'kinect',
-                             'thread': ''})
+#        self.worker.enQueue({'work': 'sent',
+#                             'from': 'kinect',
+#                             'thread': ''})
         #----------------------------------------------------------------
         # Used to manage how fast the screen updates
         self._clock = pygame.time.Clock()
@@ -217,7 +217,7 @@ class BodyGameRuntime(object):
                     #print(f"rightshoulder {right_shoulder_z} leftshoulder {left_shoulder_z}")
                     diff_shoulders = left_shoulder_z - right_shoulder_z
                     
-                    if (abs(diff_shoulders) < 0.15):
+                    if (abs(diff_shoulders) < 0.10):
                         self._current_rotation = "facing table"
                     elif(diff_shoulders > 0):
                         self._current_rotation = "facing left"
@@ -238,6 +238,7 @@ class BodyGameRuntime(object):
                                              "locationRight" : right_hand_coordinates,
                                              "previousRotation" : self._previous_rotation,
                                              "currentRotation" : self._current_rotation})
+                        print(self._current_rotation)
                         self._previous_rotation = self._current_rotation
                         event_triggered = False
                         
@@ -328,16 +329,18 @@ client = mqtt.Client(client_id)
 # set username and pw to MQTT broker and connect
 client.username_pw_set("twzdgqki", "aB6nkIbUQ7Nx")
 client.connect('m24.cloudmqtt.com', 13583, 60)
-#url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
-url='http://192.168.1.59:8080/shot.jpg' #Filips telefon
+url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
+#url='http://10.201.23.114:8080/shot.jpg' #Filips telefon
 
 stopper = threading.Event()
 wThread = worker("Worker-thread",stopper, client)
 wThread.start()
+#wThread.enQueue({"start":"start"})
 mThread = imageFeed(url, "Marker-thread", wThread, stopper)
 mThread.start()
 game = BodyGameRuntime("Kinect-thread",wThread,stopper);
 game.run();
+#wThread.enQueue({"end":"end"})
 mThread.join()   #Väntar på att tråden ska bli klar!
 wThread.join()
 print("Threads done")

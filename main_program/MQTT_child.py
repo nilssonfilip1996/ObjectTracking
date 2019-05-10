@@ -62,13 +62,24 @@ class worker(threading.Thread):
         
     def processContent(self, contentDict):
         print(contentDict)
-        client = MongoClient("mongodb+srv://nilssonfilip:ekh9lMng@testcluster-m1vgd.gcp.mongodb.net/test?retryWrites=true")
-        db = client.get_database('test')
-        collection = db.get_collection('markerdata1')
+        client = MongoClient("mongodb+srv://testUser:testUser@el01-cluster-j4gp3.gcp.mongodb.net/test?retryWrites=true")
+        db = client.get_database('El01V2')
+        collection = db.get_collection(self.colName)
         collection.insert_one(contentDict)
+        
+    def setCollectionName(self):
+        client = MongoClient("mongodb+srv://testUser:testUser@el01-cluster-j4gp3.gcp.mongodb.net/test?retryWrites=true")
+        db = client.get_database('El01V2')
+        colList = sorted(db.list_collection_names())
+        nextColIndex = str(int(colList[-1]) + 1)
+        #nextCol = 'markerdata' + str(nextColIndex)
+        self.colName = nextColIndex
+        print(self.colName)
         
 stopper = threading.Event()
 wThread = worker("worker-Thread-client",stopper)
+wThread.setCollectionName()
+#wThread.processContent({"start":"start"})
 wThread.start()
 if __name__ == '__main__':
     # building "unique" client ID
@@ -90,9 +101,12 @@ if __name__ == '__main__':
     client.loop_start()
     client.subscribe("tracking_data",0)
     
+#    wThread.processContent({"då":"hej"})
+    
     # only needed to keep the script alive
     run = True
     #wThread.setDaemon(True)
     input("press a button to exit dummy script.")
+    #wThread.processContent({"end":"end"})
     stopper.set()
     wThread.join()
