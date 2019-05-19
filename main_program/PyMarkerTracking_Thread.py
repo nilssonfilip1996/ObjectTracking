@@ -41,10 +41,7 @@ class imageFeed(threading.Thread):
             #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             #if(len(self.d_list)>4):
             if(counter==5):                                 #here
-                #print(datetime.datetime.now().time())
-                if(self.evaluateMarkerSequence()):
-                    print("Major diff detected!")
-                    print()
+                self.evaluateMarkerSequence()
                 counter=0
             markers = detect_markers(frame)
             for marker in markers:
@@ -77,7 +74,7 @@ class imageFeed(threading.Thread):
             if(diff[0]=='change'):
                 m1 = diff[2][0]         #Old reading
                 m2 = diff[2][1]         #New reading
-                if(not isInBoundary(m1, m2, 4)): #diff in 4 pixels mean actual movement.
+                if(not isInBoundary(m1, m2, 2)): #diff in 2 pixels mean actual movement.
                     major_diff_detected = True
                     aDict = createChangeDict(diff)
                     self.worker.enQueue(aDict)  #Pass event to worker
@@ -108,6 +105,7 @@ def createChangeDict(contenttuple):
     markerId = contenttuple[1][0] #Only used for change event
     prevCoord = eventList[0]
     currCoord = eventList[1]
+    print("Moved marker " + str(markerId))
     aDict = {'event':'change',
              'localTime': str(datetime.datetime.now().time())[:-4],
              'id' : markerId,
@@ -119,12 +117,14 @@ def createAddOrRemoveDict(eventType, event):
     markerId = event[0]
     coord = event[1]
     if(eventType=='add'):
+        print("Added marker " + str(markerId))
         aDict = {'event': eventType,
                  'localTime': str(datetime.datetime.now().time())[:-4],
                  'id':markerId,
                  'previousLocation': {'x':'N/A','y':'N/A'},
                  'currentLocation': {'x':coord[0],'y':coord[1]}}
     else:
+        print("Removed marker " + str(markerId))
         aDict = {'event': eventType,
                  'localTime': str(datetime.datetime.now().time())[:-4],
                  'id':markerId,

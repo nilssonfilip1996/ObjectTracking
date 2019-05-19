@@ -63,13 +63,13 @@ class worker(threading.Thread):
     def processContent(self, contentDict):
         print(contentDict)
         client = MongoClient("mongodb+srv://testUser:testUser@el01-cluster-j4gp3.gcp.mongodb.net/test?retryWrites=true")
-        db = client.get_database('El01V2')
+        db = client.get_database('El01V3')
         collection = db.get_collection(self.colName)
         collection.insert_one(contentDict)
         
     def setCollectionName(self):
         client = MongoClient("mongodb+srv://testUser:testUser@el01-cluster-j4gp3.gcp.mongodb.net/test?retryWrites=true")
-        db = client.get_database('El01V2')
+        db = client.get_database('El01V3')
         colList = sorted(db.list_collection_names())
         nextColIndex = str(int(colList[-1]) + 1)
         #nextCol = 'markerdata' + str(nextColIndex)

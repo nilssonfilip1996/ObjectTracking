@@ -146,6 +146,7 @@ class BodyGameRuntime(object):
 
     def run(self):
         print("Starting " + self.name)
+        previousTime = datetime.datetime.now()
         # -------- Main Program Loop -----------
         while not self._done:
             # --- Main event loop
@@ -214,7 +215,6 @@ class BodyGameRuntime(object):
                     
                     right_shoulder_z = body.joints[PyKinectV2.JointType_ShoulderRight].Position.z;
                     left_shoulder_z = body.joints[PyKinectV2.JointType_ShoulderLeft].Position.z;
-                    #print(f"rightshoulder {right_shoulder_z} leftshoulder {left_shoulder_z}")
                     diff_shoulders = left_shoulder_z - right_shoulder_z
                     
                     if (abs(diff_shoulders) < 0.10):
@@ -224,13 +224,19 @@ class BodyGameRuntime(object):
                     else:
                         self._current_rotation = "facing right"
                     
+                    currentTime = datetime.datetime.now()
                     if (self._current_rotation != self._previous_rotation):
-                        # print("new rotation detected")
-                        event_triggered = True
+                        diff = currentTime-previousTime
+                        diff_in_millis = diff.total_seconds()*1000
+
+                        if(diff_in_millis>500):
+                            event_triggered = True
+                            previousTime = currentTime
                         
                     if(event_triggered):
+                        print(self._current_rotation)
                         self.worker.enQueue({"type" : "player",
-                                             "time" : str(datetime.datetime.now().time())[:-4],
+                                             "time" : str(currentTime)[:-4],
                                              "event": "rotation",
                                              "stateLeft" : self.stateLeft,
                                              "locationLeft" : left_hand_coordinates,
@@ -238,7 +244,7 @@ class BodyGameRuntime(object):
                                              "locationRight" : right_hand_coordinates,
                                              "previousRotation" : self._previous_rotation,
                                              "currentRotation" : self._current_rotation})
-                        print(self._current_rotation)
+                        #print(self._current_rotation)
                         self._previous_rotation = self._current_rotation
                         event_triggered = False
                         
@@ -266,7 +272,8 @@ class BodyGameRuntime(object):
                                 self.stateRight = "open"                                
                             else:
                                 self.stateRight = "closed"                               
-                            event_triggered = True    
+                            event_triggered = True  
+                            print("Right hand " + self.stateRight)
                             self._previous_right_hand_state = self._right_hand_state
                             
                     if(self._left_hand_state == 2 or self._left_hand_state == 3):
@@ -276,6 +283,7 @@ class BodyGameRuntime(object):
                             else:
                                 self.stateLeft = "closed"
                             event_triggered = True   
+                            print("Left hand " + self.stateLeft)
                             self._previous_left_hand_state = self._left_hand_state
                             
                     if(event_triggered):

@@ -26,7 +26,7 @@ class worker(threading.Thread):
         while not self.stopper.is_set() or not self._queue.empty():
             res = self.deQueue()
             if(res!=None):
-                print("Work found!")
+                #print("Work found!")
                 self.processContent(res)
             time.sleep(0.1)
         self.processContent({"end":"end"})
