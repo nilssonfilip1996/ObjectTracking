@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr  9 13:37:35 2019
 
-@author: orgel & Filip
+Marker tracking class.
+
+The heart or the marker tracking. All logic is run on a thread that is
+processing frames from an IP-based camera. Image processing is done
+on each frame to detect and track 2D markers. A filter is applied
+by collecting 5 consecutive frames in a dictionary. An average of the
+five frames is calculated. The latest calculate image are compared to
+the previously collected images. If differences are detected then it 
+means events has occurred. 
+
+@author: Aron Polner & Filip Nilsson 9/5/2019
 """
+
 import urllib
 import cv2
 from ar_markers import detect_markers
@@ -19,10 +29,10 @@ import math
 class imageFeed(threading.Thread):
     def __init__(self, url, name, worker, stopper):
         threading.Thread.__init__(self)
-        self.url = url                      #Url for camera feed
-        self.name = name                    #Thread name
-        self.d_list = []                    #Collection of x recent readings
-        self.prev_reading = {}              #To keep track of the last succesful reading  
+        self.url = url                            # Url for camera feed
+        self.name = name                          # Thread name
+        self.d_list = []                          # Collection of x recent readings
+        self.prev_reading = {}                    # To keep track of the last succesful reading  
         self.worker = worker
         self.stopper = stopper
         
@@ -38,14 +48,12 @@ class imageFeed(threading.Thread):
             unique_markers = {}
             marker_ids = []
             frame = self.getMobileFrame(self.url)
-            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            #if(len(self.d_list)>4):
-            if(counter==5):                                 #here
+            if(counter==5):
                 self.evaluateMarkerSequence()
                 counter=0
             markers = detect_markers(frame)
             for marker in markers:
-                if(marker.id not in marker_ids):    #This removes duplicate markers. Dunno why every marker is registered twice
+                if(marker.id not in marker_ids):  # This removes duplicate markers.
                     unique_markers[marker.id] = marker.center
                     marker_ids.append(marker.id)
                     marker.highlite_marker(frame)
@@ -60,33 +68,32 @@ class imageFeed(threading.Thread):
     def evaluateMarkerSequence(self):
         full_d = {}
         current_reading = {}
-        for d in self.d_list:   #d_list is a list of the 5 most recent readings.
+        for d in self.d_list:                    # d_list is a list of the 5 most recent readings.
             for d_key in d: 
                 if(not  d_key in full_d):
-                    full_d[d_key] = []          #full_d is a single dict holding all info from the 5 most recent readings.
+                    full_d[d_key] = []           # full_d is a single dict holding all info from the 5 most recent readings.
                 full_d[d_key].append(d[d_key])
         for d_key in full_d:
             c = Counter(full_d[d_key])          
-            value = c.most_common()[0][0]       #Get the most frequent value from the 5 most recent readings
-            current_reading[d_key] = value      #current_reading holds the most frequent values from the 5 most recent readings.
+            value = c.most_common()[0][0]        # Get the most frequent value from the 5 most recent readings
+            current_reading[d_key] = value       # current_reading holds the most frequent values from the 5 most recent readings.
         major_diff_detected = False
         for diff in list(dictdiffer.diff(self.prev_reading, current_reading)):
             if(diff[0]=='change'):
-                m1 = diff[2][0]         #Old reading
-                m2 = diff[2][1]         #New reading
-                if(not isInBoundary(m1, m2, 2)): #diff in 2 pixels mean actual movement.
+                m1 = diff[2][0]                  # Old reading
+                m2 = diff[2][1]                  # New reading
+                if(not isInBoundary(m1, m2, 2)): # diff in 2 pixels mean actual movement.
                     major_diff_detected = True
                     aDict = createChangeDict(diff)
-                    self.worker.enQueue(aDict)  #Pass event to worker
+                    self.worker.enQueue(aDict)   # Pass event to worker
             else:   
                 eventList = diff[2]
                 for e in eventList:
                     aDict = createAddOrRemoveDict(diff[0],e)
-                    self.worker.enQueue(aDict)  #Pass event to worker
+                    self.worker.enQueue(aDict)   # Pass event to worker
                 major_diff_detected = True
         self.prev_reading = current_reading
-        self.d_list = []                       #here
-        #self.d_list.pop(0)
+        self.d_list = []
         if(major_diff_detected):
             return True
         else:
@@ -102,7 +109,7 @@ class imageFeed(threading.Thread):
         
 def createChangeDict(contenttuple):
     eventList = contenttuple[2]
-    markerId = contenttuple[1][0] #Only used for change event
+    markerId = contenttuple[1][0]               # Only used for change event
     prevCoord = eventList[0]
     currCoord = eventList[1]
     print("Moved marker " + str(markerId))
@@ -136,7 +143,5 @@ def isInBoundary(coord1, coord2, r):
   
     x1 = math.pow((coord2[0]-coord1[0]), 2) 
     y1 = math.pow((coord2[1]-coord1[1]), 2) 
-    hyp = math.sqrt(x1 + y1) # distance between the centre and given point 
-    return (hyp<r)       
-
-        
+    hyp = math.sqrt(x1 + y1)                    # Distance between the centre and given point 
+    return (hyp<r)          

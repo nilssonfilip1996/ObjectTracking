@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun May 19 11:35:23 2019
-
 Simple client for verifying that a MQTT client receives data correctly
-
+Uses CloudMQTT.
 @author: Filip Nilsson & Aron Polner
 """
 # import libraries
@@ -22,10 +21,12 @@ if __name__ == '__main__':
     # assign event callbacks
     client.on_message = on_message  
     # set username and pw to MQTT broker and connect
-    client.username_pw_set("twzdgqki", "aB6nkIbUQ7Nx")
-    client.connect('m24.cloudmqtt.com', 13583, 60)  
+    client.username_pw_set("user", "password")      #<--Change to actual credentials
+    client.connect('m24.cloudmqtt.com', "port", 60) #<--Change to actual credentials
     # start asynchronous loop an subscribe
     client.loop_start()
     client.subscribe("tracking_data",0) 
     #To exit the program, press a key
     input("press a button to exit the simple client.")
+    
+    

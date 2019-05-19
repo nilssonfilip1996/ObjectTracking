@@ -1,8 +1,16 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr  9 13:30:51 2019
 
-@author: nilss
+"""
+
+    This class contains the worker. The worker
+    handles an event queue. Events are sent
+    to the queque asynchronously from two camera
+    feeds. Once received by the worker they are
+    stored and passed on to an MQTT broker.
+    
+    @author: Aron Polner & Filip Nilsson 9/5/2019
+
 """
 
 import threading
@@ -10,7 +18,6 @@ import queue
 import time
 
 import json
-#import paho.mqtt.client as mqtt
              
 class worker(threading.Thread):
     def __init__(self, name, stopper, client):
@@ -26,7 +33,6 @@ class worker(threading.Thread):
         while not self.stopper.is_set() or not self._queue.empty():
             res = self.deQueue()
             if(res!=None):
-                #print("Work found!")
                 self.processContent(res)
             time.sleep(0.1)
         self.processContent({"end":"end"})
@@ -44,7 +50,6 @@ class worker(threading.Thread):
             return None
         
     def processContent(self, contentDict):
-        #print(contentDict)
         data_out=json.dumps(contentDict) # json.loads - decodes json into a python object 
         self.mqttClient.publish("tracking_data", data_out)
         

@@ -1,8 +1,19 @@
-"""
-This is the main file of the program.
-Run this file.
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-@author: orgel & Filip
+"""
+    This is the main file of the program. 
+    Connect the IP-camera before running this file.
+    To quit the program shut down the Kinect window.
+    
+    Current limitations: Only one person can be visible
+    for the system to capture that persons movements correctly.
+    
+    @author: Aron Polner & Filip Nilsson, 19/5/2019
+    
+    This code is an adaption of PyKinectV2
+    originally created by Vlad Kolesnikov. 
+    His github: https://github.com/Kinect/PyKinect2
 """
 
 from pykinect2 import PyKinectV2
@@ -33,7 +44,9 @@ SKELETON_COLORS = [pygame.color.THECOLORS["red"],
 
 class BodyGameRuntime(object):
     def __init__(self, name, workerInstance, stopper):
+        print()
         pygame.init()
+        print()
         self.name = name
         self.worker = workerInstance
         self.stopper = stopper
@@ -51,7 +64,7 @@ class BodyGameRuntime(object):
         self._screen = pygame.display.set_mode((self._infoObject.current_w >> 1, self._infoObject.current_h >> 1), 
                                                pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE, 32)
 
-        pygame.display.set_caption("Kinect for Windows v2 Body Game")
+        pygame.display.set_caption("El01")
 
         # Loop until the user clicks the close button.
         self._done = False
@@ -68,19 +81,11 @@ class BodyGameRuntime(object):
         # here we will store skeleton data 
         self._bodies = None
         
-        # here we will store state data
+        # roatiotion variables
+        
         self._current_rotation = None
-        self._left_hand_state = None
-        self._right_hand_state = None
-        
         self._previous_rotation = None
-        self._previous_left_hand_state = None
-        self._previous_right_hand_state = None
         
-        self.stateLeft = None
-        self.stateRight = None
-    
-
     def draw_body_bone(self, joints, jointPoints, color, joint0, joint1):
         joint0State = joints[joint0].TrackingState;
         joint1State = joints[joint1].TrackingState;
@@ -157,8 +162,6 @@ class BodyGameRuntime(object):
                 elif event.type == pygame.VIDEORESIZE: # window resized
                     self._screen = pygame.display.set_mode(event.dict['size'], 
                                                pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE, 32)
-                    
-            # --- Game logic should go here
 
             # --- Getting frames and drawing  
             # --- Woohoo! We've got a color frame! Let's fill out back buffer surface with frame's data 
@@ -178,39 +181,24 @@ class BodyGameRuntime(object):
                     if not body.is_tracked:
                         continue 
                     
-                    '''OUR CODE'''
-                    
-                    # HAND COORDINATES
-                    
-                    '''
-                    Using depth data of joints - https://github.com/Kinect/PyKinect2/blob/master/pykinect2/PyKinectV2.py
-                                                 line: 1816
-                                                 
-                    Returns a value of the particular joint in relation to the camera.
-                    '''
-                    
-                    left_hand_x = body.joints[PyKinectV2.JointType_HandTipLeft].Position.x;
-                    left_hand_y = body.joints[PyKinectV2.JointType_HandTipLeft].Position.y;
-                    left_hand_z = body.joints[PyKinectV2.JointType_HandTipLeft].Position.z;
-                    
-                    right_hand_x = body.joints[PyKinectV2.JointType_HandTipRight].Position.x;
-                    right_hand_y = body.joints[PyKinectV2.JointType_HandTipRight].Position.y;
-                    right_hand_z = body.joints[PyKinectV2.JointType_HandTipRight].Position.z;  
-                    
-                    left_hand_coordinates = {"x":round(left_hand_x,2),
-                                             "y":round(left_hand_y,2), 
-                                             "z":round(left_hand_z,2)}
-                    right_hand_coordinates = {"x":round(right_hand_x,2),
-                                              "y":round(right_hand_y,2),
-                                              "z":round(right_hand_z,2)}
+                    '''El01 CODE STARTS HERE'''
                     
                     # ROTATION
                     
                     '''
-                    Using depth data of shoulder joints to determine rotation.
-                    By compareing the z value on players shoulders the rotation is calculated.
-                    Small movements do not trigger new events. The previous state must
-                    change for an event to trigger as well.
+                    The code below retreives the Z value of each shoulder joint.
+                    A difference (diff_shoulders) is then calculated. Depending 
+                    on this difference either of the three events are triggered:
+                        
+                                        "facing table"
+                                        "facing left"
+                                        "facing right"
+                    
+                    The depth that currently triggers an event is 0.1m (10cm).
+                    A filter is applied to the algorithm to only allow new events
+                    to be triggered if they are 500ms (0.5s) apart. Once a new 
+                    event occurs it is formated to JSON and enQueued to the worker
+                    thread.
                     '''
                     
                     right_shoulder_z = body.joints[PyKinectV2.JointType_ShoulderRight].Position.z;
@@ -236,71 +224,16 @@ class BodyGameRuntime(object):
                     if(event_triggered):
                         print(self._current_rotation)
                         self.worker.enQueue({"type" : "player",
-                                             "time" : str(currentTime)[:-4],
                                              "event": "rotation",
-                                             "stateLeft" : self.stateLeft,
-                                             "locationLeft" : left_hand_coordinates,
-                                             "stateRight" : self.stateRight,
-                                             "locationRight" : right_hand_coordinates,
+                                             "localTime" : str(currentTime)[:-4],
                                              "previousRotation" : self._previous_rotation,
                                              "currentRotation" : self._current_rotation})
                         #print(self._current_rotation)
                         self._previous_rotation = self._current_rotation
                         event_triggered = False
-                        
-                    # HAND STATE
+                                
+                    ''' El01 CODE ENDS HERE '''
                     
-                    '''
-                    Tracking hand data - https://github.com/Kinect/PyKinect2/blob/master/pykinect2/PyKinectV2.py
-                                       - https://docs.microsoft.com/en-us/previous-versions/windows/kinect/dn799273%28v%3dieb.10%29
-                    Possible states:
-                                     Unknown    =    0
-                                     NotTracked =    1
-                                     Open       =    2
-                                     Closed     =    3
-                                     Lasso      =    4
-                                     
-                    The logic below only tracks if the players hands are opened or closed
-                    '''
-                    
-                    self._left_hand_state = body.hand_left_state
-                    self._right_hand_state = body.hand_right_state
-                    
-                    if((self._right_hand_state == 2) or (self._right_hand_state == 3)):
-                        if(self._right_hand_state != self._previous_right_hand_state):
-                            if(self._right_hand_state == 2):
-                                self.stateRight = "open"                                
-                            else:
-                                self.stateRight = "closed"                               
-                            event_triggered = True  
-                            print("Right hand " + self.stateRight)
-                            self._previous_right_hand_state = self._right_hand_state
-                            
-                    if(self._left_hand_state == 2 or self._left_hand_state == 3):
-                        if(self._left_hand_state != self._previous_left_hand_state):
-                            if(self._left_hand_state == 2):                               
-                                self.stateLeft = "open"                     
-                            else:
-                                self.stateLeft = "closed"
-                            event_triggered = True   
-                            print("Left hand " + self.stateLeft)
-                            self._previous_left_hand_state = self._left_hand_state
-                            
-                    if(event_triggered):
-                        self.worker.enQueue({"type" : "player",
-                                             "time" : str(datetime.datetime.now().time())[:-4],
-                                             "event": "hand",
-                                             "stateLeft" : self.stateLeft,
-                                             "locationLeft" : left_hand_coordinates,
-                                             "stateRight" : self.stateRight,
-                                             "locationRight" : self._previous_right_hand_state,
-                                             "locationRight" : right_hand_coordinates,
-                                             "previousRotation" : self._previous_rotation,
-                                             "currentRotation" : self._current_rotation})
-                        event_triggered = False
-                    
-                    
-                    ''' OTHERS CODE '''
                     joints = body.joints
                     # convert joint coordinates to color space 
                     joint_points = self._kinect.body_joints_to_color_space(joints)
@@ -331,24 +264,25 @@ class BodyGameRuntime(object):
         print("Exiting " + self.name)
 
 
-__main__ = "Kinect v2 Body Game"
+__main__ = "Kinect v2 El01"
+
+# MQTT broker credentials are entered below
 client_id = "DummyClient"
 client = mqtt.Client(client_id)
-# set username and pw to MQTT broker and connect
 client.username_pw_set("twzdgqki", "aB6nkIbUQ7Nx")
 client.connect('m24.cloudmqtt.com', 13583, 60)
-url='http://10.2.5.219:8080/shot.jpg' #Filips telefon
-#url='http://10.201.23.114:8080/shot.jpg' #Filips telefon
 
+# The URL of the IP-camera is inserted below
+url='http://10.2.5.219:8080/shot.jpg' 
+
+# Thread logic for the worker as well as the Kinect are below
 stopper = threading.Event()
 wThread = worker("Worker-thread",stopper, client)
 wThread.start()
-#wThread.enQueue({"start":"start"})
 mThread = imageFeed(url, "Marker-thread", wThread, stopper)
 mThread.start()
 game = BodyGameRuntime("Kinect-thread",wThread,stopper);
 game.run();
-#wThread.enQueue({"end":"end"})
-mThread.join()   #Väntar på att tråden ska bli klar!
+mThread.join()
 wThread.join()
 print("Threads done")
