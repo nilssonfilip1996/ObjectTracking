@@ -3,27 +3,33 @@
 
 ## Table of contents
 * [General info](#general-information)
-* [Technologies](#technologies)
+* [Dependencies](#dependencies)
 * [Setup](#setup)
 
 ## General information
 A combination of marker tracking technology and depth sensing is used for tracking 2Dmarkers as well as a single player in a tabletop environment. The system categorizes and stores basic events such as placing, removing, and changing the location of a 2D marker as well as logging a player’s rotation in relation to the table.
 
-## Technologies
-* python 3.6
-* pykinectV2 library
+##Dependencies
+* pykinect2 library
 * pygame library
 * ar_markers library
+* threading library
+* paho.mqtt.client library
+* queue library
+* json library
+* urllib library
+* numpy library
+* dictdiffer library
 * cv2 library
 
 ## Setup
 ### Hardware
 * Kinect V2 for tracking a single player
-* An IP-camera without any distortion effects
+* An IP-camera without any distortion effects such as fisheye
 * A computer to run the program
 
 ### Software
-All of the necessary files are found in the main\_program folder. Before running the system, markers have to be generated. This is done through the ar\_marker\_generator.py module.
+All of the necessary files are found in the main\_program folder. The dependencies listed above has to be installed. Before running the system, markers have to be generated. This is done through the ar\_marker\_generator.py module.
 
 #### Configuring the marker tracking subsystem
 In order to track the markers, an IP-camera has to be up and running. The IP-address where the camera feed is made available has to be copied and set as the value to the url variable found in the PyKinectBodyTracking\_MainThead\_cleanup.py module.
