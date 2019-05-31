@@ -16,7 +16,7 @@ Database name: test
 Collection name: markerdata
 """
 def logToDB(dictContent):
-    client = MongoClient("mongodb+srv://nilssonfilip:ekh9lMng@testcluster-m1vgd.gcp.mongodb.net/test?retryWrites=true")
+    client = MongoClient("mongodb+srv://nilssonfilip:password@testcluster-m1vgd.gcp.mongodb.net/test?retryWrites=true")
     db = client.get_database('test')
     collection = db.get_collection('markerdata1')
     collection.insert_one(dictContent)
