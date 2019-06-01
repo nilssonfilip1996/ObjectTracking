@@ -1,4 +1,4 @@
-# Object tracking system.
+# Object tracking system
 
 
 ## Table of contents
@@ -7,7 +7,7 @@
 * [Setup](#setup)
 
 ## General information
-A combination of marker tracking technology and depth sensing is used for tracking 2Dmarkers as well as a single player in a tabletop environment. The system categorizes and stores basic events such as placing, removing, and changing the location of a 2D marker as well as logging a player’s rotation in relation to the table.
+A combination of marker tracking technology and depth sensing is used for tracking 2D markers as well as a single player in a tabletop environment. The system categorizes and stores basic events such as placing, removing, and changing the location of a 2D marker as well as logging a player’s rotation in relation to the table.
 
 ## Dependencies
 * pykinect2 library
